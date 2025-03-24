@@ -41,6 +41,7 @@ def login_user(request):
         data = {"userName": username, "status": "Authenticated"}
     return JsonResponse(data)
 
+
 # Create a `logout_request` view to handle sign out request
 def logout_request(request):
     logout(request)
@@ -61,20 +62,26 @@ def registration(request):
         # Check if user already exists
         User.objects.get(username=username)
         username_exist = True
-    except:
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
         # If not, simply log this is a new user
         logger.debug("{} is new user".format(username))
 
     # If it is a new user
     if not username_exist:
         # Create user in auth_user table
-        user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,password=password, email=email)
+        user = User.objects.create_user(
+            username= username,
+            first_name= first_name,
+            last_name= last_name,
+            password= password,
+            email= email)
         # Login the user and redirect to list page
         login(request, user)
-        data = {"userName":username, "status": "Authenticated"}
+        data = {"userName": username, "status": "Authenticated"}
         return JsonResponse(data)
-    else :
-        data = {"userName":username, "error": "Already Registered"}
+    else:
+        data = {"userName": username, "error": "Already Registered"}
         return JsonResponse(data)
 
 
@@ -96,9 +103,9 @@ def get_dealerships(request, state="All"):
     if(state == "All"):
         endpoint = "fetchDealers"
     else:
-        endpoint = "fetchDealers/"+state
+        endpoint = "fetchDealers/" + state
     dealerships = get_request(endpoint)
-    return JsonResponse({"status": 200, "dealers":dealerships})
+    return JsonResponse({"status": 200, "dealers": dealerships})
 
 
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
@@ -119,7 +126,7 @@ def get_dealer_reviews(request, dealer_id):
 # Create a `get_dealer_details` view to render the dealer details
 def get_dealer_details(request, dealer_id):
     if(dealer_id):
-        endpoint = "/fetchDealer/"+str(dealer_id)
+        endpoint = "/fetchDealer/" + str(dealer_id)
         dealership = get_request(endpoint)
         return JsonResponse({"status": 200, "dealer": dealership})
     else:
@@ -128,13 +135,14 @@ def get_dealer_details(request, dealer_id):
 
 # Create a `add_review` view to submit a review
 def add_review(request):
-    if(request.user.is_anonymous == False):
+    if not request.user.is_anonymous:
         data = json.loads(request.body)
         try:
             response = post_review(data)
             print(response)
             return JsonResponse({"status": 200})
-        except:
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
             return JsonResponse({"status": 401,
                 "message": "Error in posting review"})
     else:
